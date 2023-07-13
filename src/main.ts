@@ -61,18 +61,30 @@ async function stateResturants(cityUrl: string): Promise<any> {
   }
 }
 
-
-async function getMenuItems(menuUrl: string): Promise<any> {
+async function getMenuItems(menuUrl: string) {
   const parsedData = await getPage(menuUrl)
-  const allItemsList = (parsedData as HTMLElement)?.querySelectorAll('li[class="menu-items"]')
-  for (const item of allItemsList) {
-    const menuItem: menuItem = {
-      itemName: item.querySelector('span[class="item-title"]')?.text!,
-      price: Number(item.querySelector('span[class="item-price"]')?.text!.replace('$', '')),
-      description: item.querySelector('p[class="description"]')?.text!,
-      menuUrl: menuUrl
+  const phoneNumber = (parsedData as HTMLElement)?.querySelector('div[class="phone"]')
+  ?.querySelector('a')?.getAttribute('href')!.replace('tel:', '')
+  const restName = (parsedData as HTMLElement)?.querySelector('div[class="s-col-lg-8 s-col-xs-12 restaurant-summary"]')
+  ?.querySelector('h1')?.text!
+  const address = (parsedData as HTMLElement)?.querySelector('ul[class="info-list"]')
+  ?.querySelector('a[class="menu-address"]')?.text!
+  const allItemCategory = (parsedData as HTMLElement)?.querySelectorAll('li[class="menu-category"]')
+  for (const itemCategory of allItemCategory) {
+    for (const item of itemCategory.querySelectorAll('li[class="menu-items"]')) {
+      const menuItem: menuItem = {
+        itemName: item.querySelector('span[class="item-title"]')?.text!,
+        price: Number(item.querySelector('span[class="item-price"]')?.text!.replace('$', '')),
+        description: item.querySelector('p[class="description"]')?.text!,
+        category: itemCategory.querySelector('div[class="h4 category-name menu-section-title"]')?.text!,
+        categoryDescription: itemCategory.querySelector('div[class="category-description"]')?.text!,
+        restaurantPN: phoneNumber!,
+        resutaurantName: restName!,
+        address: address!,
+        menuUrl: menuUrl
+      }
+      await writeToFile(menuItem)
     }
-    await writeToFile(menuItem)
   }
 }
 
@@ -103,7 +115,6 @@ async function removeTrailingComma(): Promise<void> {
     console.error('An error occurred while removing trailing comma:', error)
   }
 }
-
 
 fs.writeFileSync('menuItems.json', '[\n')
 for (const state of stateAbbrv) {
